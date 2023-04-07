@@ -10,12 +10,105 @@
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
   
 <h1>socket app</h1>
- 
+<canvas></canvas>
   
 
 
     <script>
         const socket= io("http://localhost:9090/",{transports:["websocket"]})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+ 
+	
+ 
+
+		// Get the canvas element and its context
+		const canvas = document.querySelector('canvas');
+		const context = canvas.getContext('2d');
+
+		// Set the canvas size to match the screen resolution
+		canvas.width = window.screen.width;
+		canvas.height = window.screen.height;
+
+		// Set up the MediaStream and the MediaRecorder
+		const stream = canvas.captureStream(30);
+		const recorder = new MediaRecorder(stream, {
+			mimeType: 'video/webm; codecs=vp9'
+		});
+
+		// Start the recording when the MediaRecorder starts
+		recorder.addEventListener('start', () => {
+			console.log('Recording started');
+
+			// Send the video data to the server when a new data chunk is available
+			recorder.addEventListener('dataavailable', (event) => {
+				console.log('Sending video data to server:', event.data.size);
+				socket.emit('video', event.data);
+			});
+
+			// Stop the recording when the MediaRecorder stops
+			recorder.addEventListener('stop', () => {
+				console.log('Recording stopped');
+			});
+		});
+
+		// Start the recording when the user clicks the canvas
+		canvas.addEventListener('click', () => {
+			console.log('Starting recording');
+			recorder.start();
+		});
+
+		// Stop the recording when the user presses the "Esc" key
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') {
+				console.log('Stopping recording');
+				recorder.stop();
+			}
+		});
+
+		// Send the canvas frame to the server when a new frame is available
+		function sendFrame() {
+			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+			const dataURL = canvas.toDataURL('image/png');
+			socket.emit('frame', dataURL);
+			requestAnimationFrame(sendFrame);
+		}
+		requestAnimationFrame(sendFrame);
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </script>
 </body>
 </html>
